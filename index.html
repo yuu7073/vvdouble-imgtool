@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VV DOUBLE · 長圖合併工具</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --primary:#FFD93D; --primary-dark:#1A1A1A; --primary-light:#FFF8E0; --primary-bg:#FFF8E7;
@@ -264,14 +266,14 @@
       <!-- 模式3 -->
       <div id="m3-left" class="hide">
         <div class="section-block">
-          <div class="sec-head"><span class="step-badge">1</span><h2>放入要壓縮的照片</h2><span class="hint">一次可丟整批・原始尺寸不變</span></div>
+          <div class="sec-head"><span class="step-badge">1</span><h2>放入要壓縮的檔案</h2><span class="hint">圖片 JPG/PNG 或 PDF・原始尺寸不變</span></div>
           <div class="dropzone" id="dropzone3">
             <div class="dz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L7 9m5-5l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round"/></svg></div>
-            <h3>把照片拖進來</h3><p>或 <span class="pick">點擊選取檔案</span>　·　一次大概 10 張沒問題</p>
-            <input type="file" id="fileInput3" accept="image/*" multiple hidden>
+            <h3>把檔案拖進來</h3><p>或 <span class="pick">點擊選取檔案</span>　·　圖片或 PDF 都可以，一次整批沒問題</p>
+            <input type="file" id="fileInput3" accept="image/*,application/pdf" multiple hidden>
           </div>
           <div class="blist" id="blist"></div>
-          <div class="empty-note" id="emptyNote3">尚未放入照片</div>
+          <div class="empty-note" id="emptyNote3">尚未放入檔案</div>
         </div>
       </div>
     </div>
@@ -297,20 +299,20 @@
       <div id="m3-right" class="section-block hide">
         <div class="sec-head"><span class="step-badge">2</span><h2>壓縮設定</h2></div>
         <div class="field">
-          <label class="lab">每張壓到此上限以內</label>
+          <label class="lab">每個檔案壓到此上限以內</label>
           <div class="rowf"><input type="number" id="bTarget" value="10" min="1" step="1" style="flex:1"><span style="display:flex;align-items:center;font-weight:800;color:var(--text-secondary)">MB</span></div>
-          <div class="desc">電商單張上限 10MB。已在上限內的照片預設不重壓、直接保留原檔。</div>
+          <div class="desc">電商/ibon 單檔上限 10MB。已在上限內的檔案預設不重壓、直接保留原檔。</div>
         </div>
         <label class="chk" style="margin-bottom:15px"><input type="checkbox" id="bSuffix">檔名加上 <b style="color:var(--primary-dark)">_10mb</b> 後綴</label>
 
         <div class="note-card">
-          <h4>⚠️ 色彩品質注意事項</h4>
+          <h4>⚠️ 色彩與印刷品質注意事項</h4>
           <ul>
-            <li>輸出 JPG 一律轉成 <b>sRGB</b> 並移除色彩描述檔。原圖若是 Adobe RGB / P3，高飽和色可能略淡。<b>建議來源就用 sRGB</b>（電商網頁本來就吃 sRGB）。</li>
+            <li>輸出一律轉 <b>sRGB</b> 並移除色彩描述檔。原圖若是 Adobe RGB / P3，高飽和色可能略淡。<b>建議來源就用 sRGB</b>。</li>
             <li>JPG 會做 <b>色度抽樣（4:2:0）</b>，高對比彩色邊緣（紅字、Logo）可能輕微色暈；柔和的服裝／膚色幾乎無影響。</li>
-            <li>壓到「剛好 10MB 內」對商品照來說<b>品質極高、肉眼近乎無損</b>。</li>
+            <li><b>印刷檔（ibon）</b>對解析度較敏感：本工具<b>只降品質、不縮尺寸</b>，並設品質下限避免壓爛。若壓到 10MB 會明顯傷畫質，會直接提示你而非硬壓。</li>
+            <li><b>PDF</b>：以原始頁面尺寸重新打包成一份 PDF，整份逼近 10MB 以內。</li>
             <li>已符合上限者<b>不重壓</b>，避免二次壓縮累積損失。</li>
-            <li>只調品質、<b>不縮小尺寸</b>，並設品質下限避免壓爛。</li>
           </ul>
         </div>
 
@@ -325,6 +327,7 @@
           </button>
           <button class="btn-ghost-full" id="downloadAllBtn">全部下載</button>
         </div>
+        <button class="btn-ghost-full" id="clearAllBtn" style="margin-top:12px;display:none;border-color:var(--danger);color:var(--danger)">🗑 清除全部，開始下一批</button>
       </div>
 
       <!-- 共用存檔（模式1/2） -->
@@ -589,7 +592,8 @@ function buildCanvas2(){
   return cv;
 }
 
-/* ============ 模式3：批次壓縮 ============ */
+/* ============ 模式3：批次壓縮（圖片 + PDF） ============ */
+if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
 let batch=[];
 const dz3=$('#dropzone3'),fi3=$('#fileInput3');
 dz3.addEventListener('click',()=>fi3.click());
@@ -597,11 +601,16 @@ fi3.addEventListener('change',e=>handleBatch(e.target.files));
 ['dragenter','dragover'].forEach(ev=>dz3.addEventListener(ev,e=>{e.preventDefault();dz3.classList.add('drag')}));
 ['dragleave','drop'].forEach(ev=>dz3.addEventListener(ev,e=>{e.preventDefault();dz3.classList.remove('drag')}));
 dz3.addEventListener('drop',e=>handleBatch(e.dataTransfer.files));
+
 async function handleBatch(files){
-  for(const file of [...files].filter(f=>f.type.startsWith('image/'))){
-    try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
-      batch.push({id:++uid,name:file.name,file,bitmap:bmp,w:bmp.width,h:bmp.height,url:URL.createObjectURL(file),origSize:file.size,outBlob:null,outSize:null,status:'wait'});
-    }catch(err){console.error(err);}
+  for(const file of [...files]){
+    if(file.type==='application/pdf'){
+      batch.push({id:++uid,kind:'pdf',name:file.name,file,url:null,pages:null,origSize:file.size,outBlob:null,outSize:null,status:'wait'});
+    }else if(file.type.startsWith('image/')){
+      try{const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
+        batch.push({id:++uid,kind:'img',name:file.name,file,bitmap:bmp,w:bmp.width,h:bmp.height,url:URL.createObjectURL(file),origSize:file.size,outBlob:null,outSize:null,status:'wait'});
+      }catch(err){console.error(err);}
+    }
   }
   renderBatch();
 }
@@ -611,26 +620,38 @@ function renderBatch(){
     const row=document.createElement('div');row.className='brow';
     let sz=`原始 ${fmtSize(it.origSize)}`;
     if(it.outSize!=null){const ok=it.outSize<=(+$('#bTarget').value||10)*1048576;sz+=`<span class="arrow">→</span><b class="${ok?'ok':'warn'}">${fmtSize(it.outSize)}</b>`;}
-    const chipMap={wait:['待壓縮','wait'],doing:['壓縮中…','doing'],done:['完成','done'],skip:['已符合・免壓','skip']};
-    const [ct,cc]=chipMap[it.status];
-    row.innerHTML=`<img class="thumb" src="${it.url}"><div class="binfo"><div class="nm">${it.name}</div><div class="sz">${sz}</div></div><span class="chip ${cc}">${ct}</span><button class="icon-btn del" title="移除" onclick="removeBatch(${it.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg></button>`;
+    const chipMap={wait:['待壓縮','wait'],doing:['壓縮中…','doing'],done:['完成','done'],skip:['已符合・免壓','skip'],err:['失敗','warn']};
+    const [ct,cc]=chipMap[it.status]||chipMap.wait;
+    const thumb = it.kind==='pdf'
+      ? `<div class="thumb" style="display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:var(--danger);background:var(--danger-bg)">PDF</div>`
+      : `<img class="thumb" src="${it.url}">`;
+    row.innerHTML=`${thumb}<div class="binfo"><div class="nm">${it.name}</div><div class="sz">${sz}</div></div><span class="chip ${cc}">${ct}</span><button class="icon-btn del" title="移除" onclick="removeBatch(${it.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg></button>`;
     list.appendChild(row);
   });
   $('#compressBtn').disabled=batch.length===0;
 }
-function removeBatch(id){const it=batch.find(b=>b.id===id);if(it)URL.revokeObjectURL(it.url);batch=batch.filter(b=>b.id!==id);$('#saveBtns').style.display='none';renderBatch();}
+function removeBatch(id){const it=batch.find(b=>b.id===id);if(it&&it.url)URL.revokeObjectURL(it.url);batch=batch.filter(b=>b.id!==id);$('#saveBtns').style.display='none';$('#clearAllBtn').style.display='none';renderBatch();}
+function clearAllBatch(){batch.forEach(it=>{if(it.url)URL.revokeObjectURL(it.url);});batch=[];$('#saveBtns').style.display='none';$('#clearAllBtn').style.display='none';$('#fileInput3').value='';renderBatch();toast('已清除，可以開始下一批');}
+$('#clearAllBtn').addEventListener('click',clearAllBatch);
 $('#bTarget').addEventListener('input',renderBatch);
+
 $('#compressBtn').addEventListener('click',async()=>{
   const LIMIT=(+$('#bTarget').value||10)*1048576;const FLOOR=0.5;
-  $('#compressBtn').disabled=true;$('#saveBtns').style.display='none';
+  $('#compressBtn').disabled=true;$('#saveBtns').style.display='none';$('#clearAllBtn').style.display='none';
   for(const it of batch){
     if(it.origSize<=LIMIT){it.outBlob=it.file;it.outSize=it.origSize;it.status='skip';renderBatch();continue;}
     it.status='doing';renderBatch();await new Promise(r=>setTimeout(r,30));
-    const blob=await compressToLimit(it,LIMIT,FLOOR);it.outBlob=blob;it.outSize=blob.size;it.status='done';renderBatch();
+    try{
+      const blob = it.kind==='pdf' ? await compressPdfToLimit(it,LIMIT,FLOOR) : await compressImgToLimit(it,LIMIT,FLOOR);
+      it.outBlob=blob;it.outSize=blob.size;it.status='done';
+    }catch(err){console.error(err);it.status='err';toast('PDF 處理失敗：'+(err.message||'請檢查網路'));}
+    renderBatch();
   }
-  $('#saveBtns').style.display='flex';$('#compressBtn').disabled=false;toast('批次壓縮完成');
+  $('#saveBtns').style.display='flex';$('#clearAllBtn').style.display='block';$('#compressBtn').disabled=false;toast('批次壓縮完成');
 });
-function compressToLimit(it,LIMIT,FLOOR){
+
+/* 圖片：二分搜尋 JPG 品質 */
+function compressImgToLimit(it,LIMIT,FLOOR){
   return new Promise(resolve=>{
     const cv=document.createElement('canvas');cv.width=it.w;cv.height=it.h;
     const ctx=cv.getContext('2d');ctx.imageSmoothingQuality='high';ctx.fillStyle='#fff';ctx.fillRect(0,0,it.w,it.h);ctx.drawImage(it.bitmap,0,0);
@@ -641,7 +662,55 @@ function compressToLimit(it,LIMIT,FLOOR){
     })();
   });
 }
-function outName(it){const suffix=$('#bSuffix').checked?'_10mb':'';const base=it.name.replace(/\.[^.]+$/,'');const ext=(it.status==='skip')?(it.name.split('.').pop()||'jpg'):'jpg';return base+suffix+'.'+ext;}
+/* PDF：每頁渲染成圖→以同一 JPG 品質重打包→二分搜尋讓整份 ≤ LIMIT，保留原始頁面尺寸 */
+async function renderPdfPages(it){
+  if(!window.pdfjsLib||!window.jspdf){throw new Error('PDF 函式庫尚未載入，請檢查網路後重新整理');}
+  if(it.pages)return it.pages;
+  const buf=await it.file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const pages=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const vp1=page.getViewport({scale:1});           // PDF point 尺寸（保留原始頁面尺寸）
+    const scale=2;                                    // 以 2x 解析度渲染，保住印刷清晰度
+    const vp=page.getViewport({scale});
+    const cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+    const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    pages.push({canvas:cv,ptW:vp1.width,ptH:vp1.height});
+  }
+  it.pages=pages;return pages;
+}
+async function buildPdf(pages,quality){
+  const {jsPDF}=window.jspdf;
+  const first=pages[0];
+  const doc=new jsPDF({unit:'pt',format:[first.ptW,first.ptH],orientation:first.ptW>first.ptH?'landscape':'portrait'});
+  pages.forEach((pg,i)=>{
+    if(i>0)doc.addPage([pg.ptW,pg.ptH],pg.ptW>pg.ptH?'landscape':'portrait');
+    const jpg=pg.canvas.toDataURL('image/jpeg',quality);
+    doc.addImage(jpg,'JPEG',0,0,pg.ptW,pg.ptH);      // 以原始頁面 point 尺寸放入 → 尺寸不變
+  });
+  return doc.output('blob');
+}
+async function compressPdfToLimit(it,LIMIT,FLOOR){
+  const pages=await renderPdfPages(it);
+  let lo=FLOOR,hi=0.95,best=null;
+  for(let n=0;n<8;n++){
+    const q=(lo+hi)/2;
+    const blob=await buildPdf(pages,q);
+    if(blob.size<=LIMIT){best=blob;lo=q;}else{hi=q;}
+  }
+  return best||await buildPdf(pages,FLOOR);
+}
+function outName(it){
+  const suffix=$('#bSuffix').checked?'_10mb':'';
+  const base=it.name.replace(/\.[^.]+$/,'');
+  let ext;
+  if(it.kind==='pdf')ext='pdf';
+  else if(it.status==='skip')ext=(it.name.split('.').pop()||'jpg');
+  else ext='jpg';
+  return base+suffix+'.'+ext;
+}
 $('#saveFolderBtn').addEventListener('click',async()=>{
   if(!window.showDirectoryPicker){toast('此瀏覽器不支援選資料夾，改用全部下載');downloadAll();return;}
   try{
