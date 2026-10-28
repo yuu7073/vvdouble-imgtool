@@ -272,7 +272,7 @@ async function checkConn(){
   if(!slPw()){setStatus('off','未連線');return;}
   setStatus('ing','連線中…');
   try{const j=await slApi('ping');setStatus(j.ok?'on':'off',j.ok?('已連線 '+(j.merchant||'')):'密碼錯誤');}
-  catch(e){setStatus('off','連線失敗');}
+  catch(e){setStatus('off',/密碼/.test(e.message||'')?'密碼錯誤':'連線失敗');}
 }
 async function slApi(action,payload){
   const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json','X-Tool-Password':slPw()},body:JSON.stringify(Object.assign({action},payload||{}))});
