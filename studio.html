@@ -231,7 +231,6 @@ const PRODUCTS=[
   {id:'p1',name:'《獨家自訂秋季新色》MIT不收邊寬鬆百搭必備顯瘦大學T',cat:'新品 / 上衣',
    desc:'入秋必備寬鬆衛衣，棉混紡親膚，版型寬鬆、布料微彈。',
    model:'model VV 154/92・亮亮 163/85（F 均碼）',
-   sizes:[['SIZE','F'],['肩寬','78'],['胸寬','79'],['全長','73']],
    ref:{
      tag:'#不修邊幅',
      title:'自在慵懶落肩寬鬆長袖上衣',
@@ -241,7 +240,6 @@ const PRODUCTS=[
   {id:'p2',name:'《獨家自訂》木槿花開彈力蕾絲撞色包邊透膚上衣',cat:'新品 / 上衣',
    desc:'彈性蕾絲布料，撞色包邊設計，透膚層次。',
    model:'model VV 154/92（F 均碼）',
-   sizes:[['SIZE','F'],['肩寬','40'],['胸寬','54'],['全長','58']],
    ref:{
      tag:'#剛剛好的浪漫',
      title:'彈力蕾絲撞色包邊透膚上衣',
@@ -251,7 +249,6 @@ const PRODUCTS=[
   {id:'p3',name:'《獨家自訂》秋日暖陽冰感透氣鬆緊西裝寬褲',cat:'新品 / 褲裝',
    desc:'冰感透氣布料，鬆緊腰圍，寬褲版型好活動。',
    model:'model 亮亮 163/85（F 均碼）',
-   sizes:[['SIZE','F'],['腰圍','64-96'],['臀圍','120'],['褲長','98']],
    ref:{
      tag:'#每天都想穿系列再+1',
      title:'秋日暖陽冰感透氣鬆緊西裝寬褲',
@@ -288,7 +285,6 @@ function genRef(){
 function renderRef(p){
   const r=p.ref;
   const tags3=r.tags3.join('｜');
-  const sizeTb=`<table class="sizetb">${p.sizes.map((row,i)=>`<tr>${row.map(c=>i===0?`<th>${c}</th>`:`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
   $('#genArea').innerHTML=`
     <div class="ref-card">
       <div class="rc-head"><h3>做圖參考（P1 四段）</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
@@ -297,7 +293,6 @@ function renderRef(p){
       <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyTxt(this,'${r.slogan}')">複製</button></div><div class="rb-body">${r.slogan}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyTxt(this,'${tags3}')">複製</button></div><div class="rb-body">${tags3}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">MODEL 行（可選）</span><button class="rb-copy" onclick="copyTxt(this,'${p.model}')">複製</button></div><div class="rb-body mono">${p.model}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">尺寸（Shopline 後台原樣，可選）</span></div><div class="rb-body">${sizeTb}</div></div>
     </div>
     <div class="rule-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg>大標已去《獨家自訂》、顏色、顯瘦並重寫；賣點與標籤可用修飾身型／修身。不販賣焦慮、不帶價格、不提競品、無破折號。示意文字，正式版由 AI 依 Shopline 商品資料生成。</div>
     <button class="btn-gen" style="margin-top:12px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button>`;
