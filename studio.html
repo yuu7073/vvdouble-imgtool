@@ -30,6 +30,10 @@
   .hdr-pw{margin-left:auto;width:150px;border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.85);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--primary-dark)}
   .hdr-pw::placeholder{color:#8a7a3c}
   .hdr-pw:focus{outline:none;border-color:var(--primary-dark);background:#fff}
+  .hdr-status{margin-left:10px;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .hdr-status.off{background:rgba(0,0,0,.12);color:#5c4a1a}
+  .hdr-status.on{background:var(--success);color:#fff}
+  .hdr-status.ing{background:rgba(0,0,0,.12);color:#5c4a1a}
 
   .nav{display:flex;gap:4px;background:var(--bg-white);padding:8px 18px 0;border-bottom:1px solid var(--border-light);position:sticky;top:52px;z-index:99;overflow-x:auto}
   .nav button{border:none;background:transparent;color:var(--text-secondary);font-weight:800;font-size:13.5px;padding:11px 15px;border-radius:var(--radius-md) var(--radius-md) 0 0;white-space:nowrap;position:relative;transition:var(--transition)}
@@ -146,7 +150,7 @@
   <span class="logo">VV</span>
   <span class="ttl">美編整合工具<small>商品文案 · 製圖 · 壓縮</small><span class="mock-flag">MOCKUP</span></span>
   <input type="password" id="slPw" placeholder="Shopline 密碼" class="hdr-pw">
-  <input type="password" id="slKey" placeholder="API Key" class="hdr-pw" style="width:130px;margin-left:8px">
+  <span id="slStatus" class="hdr-status off">未連線</span>
 </div>
 <div class="nav" id="nav">
   <button class="on" data-tab="copy"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h9a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V7l3-3z" stroke-linejoin="round"/><path d="M9 10h7M9 14h7" stroke-linecap="round"/></svg></span>商品文案<span class="new">NEW</span></button>
@@ -154,6 +158,7 @@
   <button data-tab="long"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="6" rx="1.5"/><rect x="6" y="11" width="12" height="4" rx="1.5"/><rect x="6" y="17" width="12" height="4" rx="1.5"/></svg></span>長圖合併</button>
   <button data-tab="grid"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></span>網格排版</button>
   <button data-tab="zip"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l4-4m-4 8l6-6m-2 8l6-6" stroke-linecap="round"/><rect x="13" y="11" width="8" height="9" rx="1.5"/></svg></span>批次壓縮</button>
+  <button data-tab="set" style="margin-left:auto"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1l-.4-2.5H10l-.4 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.4 2.5h4l.4-2.5a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6c.07-.33.1-.66.1-1z" stroke-linejoin="round"/></svg></span>設定</button>
 </div>
 
 <div class="wrap">
@@ -225,6 +230,23 @@
     </div>
   </div>
 
+  <!-- ============ 設定 ============ -->
+  <div id="tab-set" class="hide">
+    <div class="section-block" style="max-width:520px">
+      <div class="sec-head"><h2>設定</h2></div>
+      <div class="field">
+        <label class="lab">Anthropic API Key</label>
+        <input type="password" id="slKey" placeholder="sk-ant-..." style="width:100%;border:1px solid var(--border-medium);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px">
+        <div class="desc">用於商品文案 AI 生成，存在此瀏覽器、不上傳。</div>
+      </div>
+      <div class="field">
+        <label class="lab">生成模型</label>
+        <input type="text" id="slModel" value="claude-sonnet-4-6" style="width:100%;border:1px solid var(--border-medium);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px">
+        <div class="desc">預設 claude-sonnet-4-6，可改成其他可用模型。</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 <div class="toast" id="toast"></div>
 
@@ -234,7 +256,7 @@ const $=s=>document.querySelector(s);
 /* 分頁切換 */
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  ['copy','p1','long','grid','zip'].forEach(t=>$('#tab-'+t).classList.toggle('hide',t!==b.dataset.tab));
+  ['copy','p1','long','grid','zip','set'].forEach(t=>$('#tab-'+t).classList.toggle('hide',t!==b.dataset.tab));
 });
 
 /* ===== live Shopline（走 vvdouble-shopline Cloud Function，已有 search / getProduct action） ===== */
@@ -244,7 +266,14 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function stripHtml(h){const d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').replace(/\s+/g,' ').trim();}
 function slPw(){return $('#slPw').value||'';}
 try{$('#slPw').value=sessionStorage.getItem('vv_sl_pw')||'';}catch(e){}
-$('#slPw').addEventListener('change',()=>{try{sessionStorage.setItem('vv_sl_pw',$('#slPw').value);}catch(e){}});
+$('#slPw').addEventListener('change',()=>{try{sessionStorage.setItem('vv_sl_pw',$('#slPw').value);}catch(e){}checkConn();});
+function setStatus(cls,txt){const el=$('#slStatus');el.className='hdr-status '+cls;el.textContent=txt;}
+async function checkConn(){
+  if(!slPw()){setStatus('off','未連線');return;}
+  setStatus('ing','連線中…');
+  try{const j=await slApi('ping');setStatus(j.ok?'on':'off',j.ok?('已連線 '+(j.merchant||'')):'密碼錯誤');}
+  catch(e){setStatus('off','連線失敗');}
+}
 async function slApi(action,payload){
   const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json','X-Tool-Password':slPw()},body:JSON.stringify(Object.assign({action},payload||{}))});
   const j=await r.json().catch(()=>({}));
@@ -282,8 +311,11 @@ async function selectProd(id){
   $('#genOpt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#genOpt button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 }
 function apiKey(){return $('#slKey').value||'';}
+function aiModel(){return ($('#slModel').value||'claude-sonnet-4-6').trim();}
 try{$('#slKey').value=sessionStorage.getItem('vv_anthropic_key')||'';}catch(e){}
+try{var _m=sessionStorage.getItem('vv_ai_model');if(_m)$('#slModel').value=_m;}catch(e){}
 $('#slKey').addEventListener('change',()=>{try{sessionStorage.setItem('vv_anthropic_key',$('#slKey').value);}catch(e){}});
+$('#slModel').addEventListener('change',()=>{try{sessionStorage.setItem('vv_ai_model',$('#slModel').value);}catch(e){}});
 
 const BRAND_SYS=`你是 VV DOUBLE（台灣大尺碼女裝品牌）的資深美編文案。根據商品資料，生成「P1 做圖參考」的四段文字。
 品牌文案鐵律（務必全部遵守）：
@@ -311,7 +343,7 @@ async function aiGenerate(mode){
   const r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':apiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:BRAND_SYS,messages:[{role:'user',content:user}]})
+    body:JSON.stringify({model:aiModel(),max_tokens:1024,system:BRAND_SYS,messages:[{role:'user',content:user}]})
   });
   const j=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error((j.error&&j.error.message)||('HTTP '+r.status));
@@ -368,6 +400,7 @@ function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show'
 
 $('#searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 doSearch();
+if(slPw())checkConn();
 </script>
 </body>
 </html>
