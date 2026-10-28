@@ -146,6 +146,7 @@
   <span class="logo">VV</span>
   <span class="ttl">美編整合工具<small>商品文案 · 製圖 · 壓縮</small><span class="mock-flag">MOCKUP</span></span>
   <input type="password" id="slPw" placeholder="Shopline 密碼" class="hdr-pw">
+  <input type="password" id="slKey" placeholder="API Key" class="hdr-pw" style="width:130px;margin-left:8px">
 </div>
 <div class="nav" id="nav">
   <button class="on" data-tab="copy"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h9a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V7l3-3z" stroke-linejoin="round"/><path d="M9 10h7M9 14h7" stroke-linecap="round"/></svg></span>商品文案<span class="new">NEW</span></button>
@@ -238,7 +239,7 @@ $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
 
 /* ===== live Shopline（走 vvdouble-shopline Cloud Function，已有 search / getProduct action） ===== */
 const FN_URL="https://asia-east1-vvdouble-shopline.cloudfunctions.net/shopline";
-let selected=null,results=[],curTitle='',curRef=null;
+let selected=null,results=[],curTitle='',curDesc='',curRef=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function stripHtml(h){const d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').replace(/\s+/g,' ').trim();}
 function slPw(){return $('#slPw').value||'';}
@@ -273,19 +274,65 @@ async function selectProd(id){
   try{d=await slApi('getProduct',{productId:id});}
   catch(e){$('#prodDetail').innerHTML='<div class="prod-card"><div class="pt">讀取失敗：'+esc(e.message)+'</div></div>';return;}
   curTitle=d.title||(results.find(x=>x.id===id)||{}).title||'';
-  const descText=stripHtml(d.description).slice(0,100);
-  $('#prodDetail').innerHTML=`<div class="prod-card"><div class="pt">${esc(curTitle)}<span class="src-tag">Shopline 品名</span></div><div class="krow"><span class="kk">商品描述</span><span class="kv">${esc(descText)}…</span></div></div>`;
+  curDesc=stripHtml(d.description);
+  $('#prodDetail').innerHTML=`<div class="prod-card"><div class="pt">${esc(curTitle)}<span class="src-tag">Shopline 品名</span></div><div class="krow"><span class="kk">商品描述</span><span class="kv">${esc(curDesc.slice(0,100))}…</span></div></div>`;
   $('#genArea').innerHTML=`
     <div class="gen-opt" id="genOpt"><button class="on" data-o="新品介紹">新品介紹</button><button data-o="主打商品">主打商品</button></div>
     <button class="btn-gen" onclick="genRef()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v3m0 12v3M5 12H2m20 0h-3M6 6l2 2m8 8l2 2M6 18l2-2m8-8l2-2" stroke-linecap="round"/></svg>生成做圖參考卡</button>`;
   $('#genOpt').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#genOpt button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 }
-function genRef(){
-  $('#genArea').innerHTML='<div class="placeholder-mid" style="padding:46px 20px;line-height:1.9">AI 文案生成為下一步<br>（接 Claude，套用品牌鐵律後生成四段）</div>';
+function apiKey(){return $('#slKey').value||'';}
+try{$('#slKey').value=sessionStorage.getItem('vv_anthropic_key')||'';}catch(e){}
+$('#slKey').addEventListener('change',()=>{try{sessionStorage.setItem('vv_anthropic_key',$('#slKey').value);}catch(e){}});
+
+const BRAND_SYS=`你是 VV DOUBLE（台灣大尺碼女裝品牌）的資深美編文案。根據商品資料，生成「P1 做圖參考」的四段文字。
+品牌文案鐵律（務必全部遵守）：
+1. 絕不販賣身形焦慮，不先戳痛點再給解法。
+2. 禁用字：顯胖、遮肉、藏肉、修飾缺點。
+3. 「顯瘦」不可當賣點。
+4. 正向框架：舒適、合身、自在；衣服配合人，不是人配合衣服。
+5. 不提競品、不做比較或對比抬高品牌（不要「不是放大版」這類）。
+6. 永久禁用破折號「——」。
+7. 語氣口語、溫暖、親切、生動輕快活潑，不要 AI 感、不要落落長。
+8. 不做負面行銷、不做飢餓行銷（不寫「最後N件」「再不買就沒了」）。
+9. 不帶入價格。
+10. 商品大標 title：把 Shopline 品名的《獨家自訂》等前綴、顏色、「顯瘦」去掉並重寫乾淨；大標不得出現「顯瘦」「修飾」。
+11. 賣點 slogan 與三標籤 tags3：可用「修飾身型」「修身」「順身」等（這是允許的）。
+目標客群稱呼：棉花糖女孩、肉肉女孩。
+四段定義：
+- tag：情境標籤，# 開頭短句（如 #不修邊幅、#剛剛好的浪漫），6～10 字。
+- title：商品大標，重寫乾淨、約 10～16 字。
+- slogan：一句賣點，一句話帶感覺，可用驚嘆號，約 10～16 字。
+- tags3：三個標籤，特性｜穿法或尺碼｜族群感，各 4～7 字。
+只輸出 JSON，格式：{"tag":"...","title":"...","slogan":"...","tags3":["...","...","..."]}，不要任何其他文字。`;
+
+async function aiGenerate(mode){
+  const user=`取向：${mode}\nShopline 品名：${curTitle}\n商品描述：${curDesc.slice(0,500)}`;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:BRAND_SYS,messages:[{role:'user',content:user}]})
+  });
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||('HTTP '+r.status));
+  let txt=(j.content&&j.content[0]&&j.content[0].text)||'';
+  const m=txt.match(/\{[\s\S]*\}/);if(!m)throw new Error('回傳格式異常');
+  const o=JSON.parse(m[0]);
+  if(!o.title||!Array.isArray(o.tags3))throw new Error('缺少欄位');
+  let tag=o.tag||'';if(tag&&tag[0]!=='#')tag='#'+tag;
+  return {tag,title:o.title,slogan:o.slogan||'',tags3:o.tags3.slice(0,3)};
+}
+async function genRef(){
+  if(!apiKey()){$('#genArea').innerHTML='<div class="placeholder-mid" style="padding:46px">請先在右上輸入 API Key</div>';return;}
+  if(!curTitle)return;
+  const mode=((document.querySelector('#genOpt button.on')||{}).dataset||{}).o||'新品介紹';
+  $('#genArea').innerHTML='<div class="placeholder-mid" style="padding:46px"><span class="spinner"></span><br><br>AI 生成中…（套用品牌鐵律）</div>';
+  try{const ref=await aiGenerate(mode);renderRef(curTitle,ref);}
+  catch(e){$('#genArea').innerHTML='<div class="placeholder-mid" style="padding:40px;line-height:1.9">生成失敗：'+esc(e.message)+'</div><div style="text-align:center"><button class="btn-gen" style="width:auto;padding:11px 24px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重試</button></div>';}
 }
 function renderRef(title,r){
   curRef=r;curTitle=title||curTitle;
-  const tags3=r.tags3.join('｜');
+  const tag=esc(r.tag),ti=esc(r.title),sl=esc(r.slogan),tags3=esc(r.tags3.join('｜'));
   $('#genArea').innerHTML=`
     <div class="ref-card">
       <div class="rc-head"><h3>做圖參考（P1 四段）</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
@@ -293,24 +340,20 @@ function renderRef(title,r){
         <div class="p1-prev">
           <span class="phlabel">商品照</span>
           <div class="ov">
-            <div class="mid">
-              <div class="ptag">${r.tag}</div>
-              <div class="ptitle">${r.title}</div>
-            </div>
-            <div class="bot">
-              <div class="pslogan">${r.slogan}</div>
-              <div class="ptags">${tags3}</div>
-            </div>
+            <div class="mid"><div class="ptag">${tag}</div><div class="ptitle">${ti}</div></div>
+            <div class="bot"><div class="pslogan">${sl}</div><div class="ptags">${tags3}</div></div>
           </div>
         </div>
       </div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">1 情境標籤</span><button class="rb-copy" onclick="copyTxt(this,'${r.tag}')">複製</button></div><div class="rb-body">${r.tag}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyTxt(this,'${r.title}')">複製</button></div><div class="rb-body hook">${r.title}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyTxt(this,'${r.slogan}')">複製</button></div><div class="rb-body">${r.slogan}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyTxt(this,'${tags3}')">複製</button></div><div class="rb-body">${tags3}</div></div>
-    </div>`;
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">1 情境標籤</span><button class="rb-copy" onclick="copyField('tag')">複製</button></div><div class="rb-body">${tag}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyField('title')">複製</button></div><div class="rb-body hook">${ti}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyField('slogan')">複製</button></div><div class="rb-body">${sl}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyField('tags3')">複製</button></div><div class="rb-body">${tags3}</div></div>
+    </div>
+    <div style="text-align:center;margin-top:12px"><button class="btn-gen" style="width:auto;padding:11px 26px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button></div>`;
 }
 function copyTxt(btn,txt){navigator.clipboard&&navigator.clipboard.writeText(txt);if(btn)btn.textContent='已複製';setTimeout(()=>{if(btn)btn.textContent='複製';},1200);toast('已複製');}
+function copyField(f){if(!curRef)return;const t=f==='tags3'?curRef.tags3.join('｜'):curRef[f];copyTxt(null,t);}
 function copyAll(){if(!curRef)return;const r=curRef;const all=`${r.tag}\n${r.title}\n${r.slogan}\n${r.tags3.join('｜')}`;copyTxt(null,all);toast('四段已複製');}
 
 /* P1 骨架：假版型與色票 */
