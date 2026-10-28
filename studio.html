@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VV DOUBLE · 美編整合工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --primary:#FFD93D;--primary-dark:#1A1A1A;--primary-light:#FFF8E0;--primary-bg:#FFF8E7;
@@ -108,7 +110,7 @@
   .p1-prev .ptag{font-size:10px;font-weight:700;margin-bottom:7px;opacity:.95}
   .p1-prev .ptitle{font-size:19px;font-weight:800;line-height:1.32;letter-spacing:.02em}
   .p1-prev .bot{margin-top:auto}
-  .p1-prev .pslogan{font-size:11.5px;font-weight:600;margin-bottom:6px}
+  .p1-prev .pslogan{font-size:11.5px;font-weight:600;margin-bottom:6px;white-space:nowrap}
   .p1-prev .ptags{font-size:9px;font-weight:500;opacity:.95;letter-spacing:0;white-space:nowrap}
   .rule-line{font-size:11px;color:var(--text-tertiary);margin-top:10px;padding:8px 12px;background:var(--success-bg);border-radius:var(--radius-sm);border:1px solid #CBE6D4}
   .rule-line b{color:var(--success)}
@@ -301,9 +303,11 @@ async function genRef(){
   try{const j=await slApi('genCopy',{title:curTitle,desc:curDesc,mode});renderRef(curTitle,j.ref);}
   catch(e){$('#genArea').innerHTML='<div class="placeholder-mid" style="padding:40px;line-height:1.9">生成失敗：'+esc(e.message)+'</div><div style="text-align:center"><button class="btn-gen" style="width:auto;padding:11px 24px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重試</button></div>';}
 }
+function titleLinesOf(r){return (r.titleLines&&r.titleLines.length)?r.titleLines:String(r.title||'').split('\n').filter(Boolean);}
 function renderRef(title,r){
   curRef=r;curTitle=title||curTitle;
-  const tag=esc(r.tag),ti=esc(r.title),sl=esc(r.slogan),tags3=esc(r.tags3.join('｜'));
+  const lines=titleLinesOf(r);
+  const tag=esc(r.tag),tiHtml=lines.map(esc).join('<br>'),sl=esc(r.slogan),tags3=esc(r.tags3.join('｜'));
   $('#genArea').innerHTML=`
     <div class="ref-card">
       <div class="rc-head"><h3>做圖參考（P1 四段）</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
@@ -311,17 +315,51 @@ function renderRef(title,r){
         <div class="p1-prev">
           <span class="phlabel">商品照</span>
           <div class="ov">
-            <div class="mid"><div class="ptag">${tag}</div><div class="ptitle">${ti}</div></div>
+            <div class="mid"><div class="ptag">${tag}</div><div class="ptitle">${tiHtml}</div></div>
             <div class="bot"><div class="pslogan">${sl}</div><div class="ptags">${tags3}</div></div>
           </div>
         </div>
       </div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">1 情境標籤</span><button class="rb-copy" onclick="copyField('tag')">複製</button></div><div class="rb-body">${tag}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyField('title')">複製</button></div><div class="rb-body hook">${ti}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫，兩行）</span><button class="rb-copy" onclick="copyField('title')">複製</button></div><div class="rb-body hook">${tiHtml}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyField('slogan')">複製</button></div><div class="rb-body">${sl}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyField('tags3')">複製</button></div><div class="rb-body">${tags3}</div></div>
     </div>
-    <div style="text-align:center;margin-top:12px"><button class="btn-gen" style="width:auto;padding:11px 26px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button></div>`;
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <button class="btn-gen" style="width:auto;padding:11px 26px" onclick="downloadPng()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v12m0 0l-4-4m4 4l4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 18v1a1 1 0 001 1h14a1 1 0 001-1v-1" stroke-linecap="round"/></svg>下載透明 PNG（1600×2048）</button>
+      <button class="btn-gen" style="width:auto;padding:11px 26px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button>
+    </div>`;
+}
+
+/* ===== 透明 PNG：P1 尺寸 1600×2048，版位照實際 P1 成品量測 ===== */
+function drawSpaced(ctx,text,cx,cy,spacingPx){
+  const chars=[...text];
+  const widths=chars.map(c=>ctx.measureText(c).width);
+  const total=widths.reduce((a,b)=>a+b,0)+spacingPx*(chars.length-1);
+  let x=cx-total/2;
+  ctx.textAlign='left';
+  chars.forEach((c,i)=>{ctx.fillText(c,x,cy);x+=widths[i]+spacingPx;});
+}
+async function downloadPng(){
+  if(!curRef)return;
+  try{await document.fonts.load('900 130px "Noto Sans TC"');await document.fonts.load('700 60px "Noto Sans TC"');}catch(e){}
+  const W=1600,H=2048,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff';ctx.textBaseline='middle';
+  const F='"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif';
+  const r=curRef,lines=titleLinesOf(r);
+  // 情境標籤
+  ctx.font=`700 42px ${F}`;drawSpaced(ctx,r.tag,W/2,757,8);
+  // 大標兩行（單行時置中於兩行之間）
+  ctx.font=`900 130px ${F}`;
+  if(lines.length>=2){drawSpaced(ctx,lines[0],W/2,904,16);drawSpaced(ctx,lines[1],W/2,1054,16);}
+  else{drawSpaced(ctx,lines[0]||'',W/2,979,16);}
+  // 一句賣點
+  ctx.font=`700 60px ${F}`;drawSpaced(ctx,r.slogan,W/2,1765,9);
+  // 三標籤
+  ctx.font=`700 48px ${F}`;drawSpaced(ctx,r.tags3.join(' ｜ '),W/2,1880,5);
+  const name=`P1文字_${(lines.join('')||'文案').replace(/[\\/:*?"<>|]/g,'')}.png`;
+  cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('已下載透明 PNG');},'image/png');
 }
 function copyTxt(btn,txt){navigator.clipboard&&navigator.clipboard.writeText(txt);if(btn)btn.textContent='已複製';setTimeout(()=>{if(btn)btn.textContent='複製';},1200);toast('已複製');}
 function copyField(f){if(!curRef)return;const t=f==='tags3'?curRef.tags3.join('｜'):curRef[f];copyTxt(null,t);}
