@@ -224,51 +224,56 @@ $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
   ['copy','p1','long','grid','zip'].forEach(t=>$('#tab-'+t).classList.toggle('hide',t!==b.dataset.tab));
 });
 
-/* ===== 示意資料（正式版由 Shopline live 帶回） ===== */
+/* ===== 示意資料（取自實際 Shopline 品名／P1 成品，正式版由 Shopline live 帶回） =====
+   參考卡 = P1 文字 4 段：情境標籤／商品大標（AI 重寫，去《》去顏色去顯瘦）／一句賣點／三標籤
+   鐵律：大標不用顯瘦、修飾；賣點與三標籤可用「修飾身型」「修身」 */
 const PRODUCTS=[
-  {id:'p1',name:'棉花糖澎澎袖雪紡上衣',sku:'26AU1012',cat:'新品 / 上衣',
-   desc:'輕透雪紡面料，澎澎袖設計，微開領口。',
-   model:'model VV 154/92 穿 3L4L',
-   sizes:[['尺寸','肩寬','胸圍','衣長'],['SM','38','96','58'],['ML','40','104','60'],['XL2L','42','114','62'],['3L4L','44','126','64'],['5L6L','46','138','66']],
+  {id:'p1',name:'《獨家自訂秋季新色》MIT不收邊寬鬆百搭必備顯瘦大學T',cat:'新品 / 上衣',
+   desc:'入秋必備寬鬆衛衣，棉混紡親膚，版型寬鬆、布料微彈。',
+   model:'model VV 154/92・亮亮 163/85（F 均碼）',
+   sizes:[['SIZE','F'],['肩寬','78'],['胸寬','79'],['全長','73']],
    ref:{
-     hook:'微透澎袖 風一吹就溫柔',
-     points:['雪紡面料輕透不悶，一整天都清爽','澎袖把甜度放到最大，手臂活動很自在','微開領口氣色好，配牛仔褲、長裙都合拍','版型順身好穿，慵懶日常也能很有型'],
-     link:'新品上架區 → reurl.cc/xxxxxx'
+     tag:'#不修邊幅',
+     title:'自在慵懶落肩寬鬆長袖上衣',
+     slogan:'寬鬆版型設計，不貼身更自在！',
+     tags3:['落肩修飾身型','L-6L都能穿','肉肉友善款']
    }},
-  {id:'p2',name:'借我穿一下燈心絨復古撞色寬版外套',sku:'26AU0923',cat:'新品 / 外套',
-   desc:'燈心絨厚挺布料，寬版落肩，撞色配色，雙側大口袋。',
-   model:'model 亮亮 158/68 穿 XL2L',
-   sizes:[['尺寸','肩寬','胸圍','衣長'],['ML','46','112','66'],['XL2L','48','122','68'],['3L4L','50','134','70'],['5L6L','52','146','72']],
+  {id:'p2',name:'《獨家自訂》木槿花開彈力蕾絲撞色包邊透膚上衣',cat:'新品 / 上衣',
+   desc:'彈性蕾絲布料，撞色包邊設計，透膚層次。',
+   model:'model VV 154/92（F 均碼）',
+   sizes:[['SIZE','F'],['肩寬','40'],['胸寬','54'],['全長','58']],
    ref:{
-     hook:'復古撞色 一件就很有態度',
-     points:['燈心絨質感厚挺，早晚微涼套上剛剛好','寬版落肩好活動，內搭隨便穿都好看','撞色配色很好認，通勤或假日都百搭','雙側大口袋實用，手機鑰匙直接放'],
-     link:'新品上架區 → reurl.cc/xxxxxx'
+     tag:'#剛剛好的浪漫',
+     title:'彈力蕾絲撞色包邊透膚上衣',
+     slogan:'撞色細節，讓簡約多一點亮點',
+     tags3:['彈性材質','不限身型','精緻系穿搭']
    }},
-  {id:'p3',name:'慵懶落肩針織寬版洋裝',sku:'26AU1005',cat:'新品 / 洋裝',
-   desc:'親膚針織，落肩寬版，一件式洋裝。',
-   model:'model VV 154/92 穿 3L4L',
-   sizes:[['尺寸','肩寬','胸圍','衣長'],['SM','40','98','96'],['ML','42','106','98'],['XL2L','44','116','100'],['3L4L','46','128','102'],['5L6L','48','140','104']],
+  {id:'p3',name:'《獨家自訂》秋日暖陽冰感透氣鬆緊西裝寬褲',cat:'新品 / 褲裝',
+   desc:'冰感透氣布料，鬆緊腰圍，寬褲版型好活動。',
+   model:'model 亮亮 163/85（F 均碼）',
+   sizes:[['SIZE','F'],['腰圍','64-96'],['臀圍','120'],['褲長','98']],
    ref:{
-     hook:'落肩針織 慵懶又好搭',
-     points:['針織親膚不扎，窩在家或出門都舒服','落肩版型放鬆不緊繃，活動很自在','一件式洋裝搞定，配球鞋、靴子都順','耐看基本色，衣櫥必備款'],
-     link:'新品上架區 → reurl.cc/xxxxxx'
+     tag:'#每天都想穿系列再+1',
+     title:'秋日暖陽冰感透氣鬆緊西裝寬褲',
+     slogan:'輕鬆穿出好比例，舒服一整天',
+     tags3:['清爽冰感觸感','舒適彈性腰圍','修飾腿部線條']
    }}
 ];
 let selected=null;
 
 function doSearch(){
   const q=$('#searchInput').value.trim();
-  const list=q? PRODUCTS.filter(p=>p.name.includes(q)||p.sku.includes(q)) : PRODUCTS;
+  const list=q? PRODUCTS.filter(p=>p.name.includes(q)) : PRODUCTS;
   const box=$('#results');
-  if(!list.length){box.innerHTML='<div class="placeholder-mid" style="padding:24px">查無商品（示意：試試「上衣」「外套」或直接搜尋看全部）</div>';return;}
-  box.innerHTML=list.map(p=>`<div class="result" onclick="selectProd('${p.id}')" data-id="${p.id}"><div class="pimg">商品圖</div><div><div class="pn">${p.name}</div><div class="pm">${p.sku} · ${p.cat}</div></div>${selected===p.id?'<span class="pick-tag">已選</span>':''}</div>`).join('');
+  if(!list.length){box.innerHTML='<div class="placeholder-mid" style="padding:24px">查無商品（示意：試試「上衣」「褲」或直接搜尋看全部）</div>';return;}
+  box.innerHTML=list.map(p=>`<div class="result" onclick="selectProd('${p.id}')" data-id="${p.id}"><div class="pimg">商品圖</div><div><div class="pn">${p.name}</div><div class="pm">${p.cat}</div></div>${selected===p.id?'<span class="pick-tag">已選</span>':''}</div>`).join('');
 }
 function selectProd(id){
   selected=id;const p=PRODUCTS.find(x=>x.id===id);
   document.querySelectorAll('.result').forEach(r=>r.classList.toggle('sel',r.dataset.id===id));
   doSearch();
   $('#prodDetail').classList.remove('hide');
-  $('#prodDetail').innerHTML=`<div class="prod-card"><div class="pt">${p.name}<span class="src-tag">Shopline</span></div><div class="pc">${p.sku} · ${p.cat}</div><div class="krow"><span class="kk">商品描述</span><span class="kv">${p.desc}</span></div><div class="krow"><span class="kk">模特兒參考</span><span class="kv">${p.model}</span></div><div class="krow"><span class="kk">尺寸</span><span class="kv">${p.sizes.length-1} 個尺碼（SM ~ 5L6L）</span></div></div>`;
+  $('#prodDetail').innerHTML=`<div class="prod-card"><div class="pt">${p.name}<span class="src-tag">Shopline 品名</span></div><div class="pc">${p.cat}</div><div class="krow"><span class="kk">商品描述</span><span class="kv">${p.desc}</span></div><div class="krow"><span class="kk">模特兒參考</span><span class="kv">${p.model}</span></div></div>`;
   // 右側顯示生成鈕
   $('#genArea').innerHTML=`
     <div class="gen-opt" id="genOpt"><button class="on" data-o="新品介紹">新品介紹</button><button data-o="主打商品">主打商品</button></div>
@@ -282,21 +287,23 @@ function genRef(){
 }
 function renderRef(p){
   const r=p.ref;
+  const tags3=r.tags3.join('｜');
   const sizeTb=`<table class="sizetb">${p.sizes.map((row,i)=>`<tr>${row.map(c=>i===0?`<th>${c}</th>`:`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
   $('#genArea').innerHTML=`
     <div class="ref-card">
-      <div class="rc-head"><h3>${p.name}</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">首圖色帶短句</span><button class="rb-copy" onclick="copyTxt(this,'${r.hook}')">複製</button></div><div class="rb-body hook">${r.hook}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">賣點條列（長圖文字）</span><button class="rb-copy" onclick="copyTxt(this,\`${r.points.join('\\n')}\`)">複製</button></div><div class="rb-body"><ul>${r.points.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">MODEL 行</span><button class="rb-copy" onclick="copyTxt(this,'${p.model}')">複製</button></div><div class="rb-body mono">${p.model}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">尺寸（Shopline 後台原樣）</span></div><div class="rb-body">${sizeTb}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">連結（新品放分類）</span><button class="rb-copy" onclick="copyTxt(this,'${r.link}')">複製</button></div><div class="rb-body mono">${r.link}</div></div>
+      <div class="rc-head"><h3>做圖參考（P1 四段）</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">1 情境標籤</span><button class="rb-copy" onclick="copyTxt(this,'${r.tag}')">複製</button></div><div class="rb-body">${r.tag}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyTxt(this,'${r.title}')">複製</button></div><div class="rb-body hook">${r.title}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyTxt(this,'${r.slogan}')">複製</button></div><div class="rb-body">${r.slogan}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyTxt(this,'${tags3}')">複製</button></div><div class="rb-body">${tags3}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">MODEL 行（可選）</span><button class="rb-copy" onclick="copyTxt(this,'${p.model}')">複製</button></div><div class="rb-body mono">${p.model}</div></div>
+      <div class="ref-block"><div class="rb-top"><span class="rb-label">尺寸（Shopline 後台原樣，可選）</span></div><div class="rb-body">${sizeTb}</div></div>
     </div>
-    <div class="rule-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg>已套用品牌鐵律：<b>不販賣焦慮、不帶價格、禁用遮肉/修飾/顯胖、顯瘦不當賣點、不提競品、無破折號</b>。示意文字，正式版由 AI 依 Shopline 商品資料生成。</div>
+    <div class="rule-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg>大標已去《獨家自訂》、顏色、顯瘦並重寫；賣點與標籤可用修飾身型／修身。不販賣焦慮、不帶價格、不提競品、無破折號。示意文字，正式版由 AI 依 Shopline 商品資料生成。</div>
     <button class="btn-gen" style="margin-top:12px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button>`;
 }
 function copyTxt(btn,txt){navigator.clipboard&&navigator.clipboard.writeText(txt);if(btn)btn.textContent='已複製';setTimeout(()=>{if(btn)btn.textContent='複製';},1200);toast('已複製');}
-function copyAll(){const p=PRODUCTS.find(x=>x.id===selected);const r=p.ref;const all=`${p.name}\n\n【首圖短句】${r.hook}\n\n【賣點】\n${r.points.map(x=>'・'+x).join('\n')}\n\n${p.model}\n\n【連結】${r.link}`;copyTxt(null,all);}
+function copyAll(){const p=PRODUCTS.find(x=>x.id===selected);const r=p.ref;const all=`${r.tag}\n${r.title}\n${r.slogan}\n${r.tags3.join('｜')}`;copyTxt(null,all);toast('四段已複製');}
 
 /* P1 骨架：假版型與色票 */
 (function(){
