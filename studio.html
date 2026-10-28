@@ -44,7 +44,7 @@
   .sec-head .hint{font-size:11.5px;color:var(--text-tertiary);margin-left:auto;font-weight:500}
 
   /* 商品文案 */
-  .copy-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .copy-grid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
   @media(max-width:860px){.copy-grid{grid-template-columns:1fr}}
 
   .search-row{display:flex;gap:8px;margin-bottom:14px}
@@ -268,9 +268,10 @@ let selected=null;
 
 function doSearch(){
   const q=$('#searchInput').value.trim();
-  const list=q? PRODUCTS.filter(p=>p.name.includes(q)) : PRODUCTS;
   const box=$('#results');
-  if(!list.length){box.innerHTML='<div class="placeholder-mid" style="padding:24px">查無商品（示意：試試「上衣」「褲」或直接搜尋看全部）</div>';return;}
+  if(!q){box.innerHTML='<div class="placeholder-mid" style="padding:30px">輸入商品名稱或貨號後搜尋</div>';return;}
+  const list=PRODUCTS.filter(p=>p.name.includes(q));
+  if(!list.length){box.innerHTML='<div class="placeholder-mid" style="padding:30px">查無商品</div>';return;}
   box.innerHTML=list.map(p=>`<div class="result" onclick="selectProd('${p.id}')" data-id="${p.id}"><div class="pimg">商品圖</div><div><div class="pn">${p.name}</div><div class="pm">${p.cat}</div></div>${selected===p.id?'<span class="pick-tag">已選</span>':''}</div>`).join('');
 }
 function selectProd(id){
@@ -315,10 +316,7 @@ function renderRef(p){
       <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyTxt(this,'${r.title}')">複製</button></div><div class="rb-body hook">${r.title}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyTxt(this,'${r.slogan}')">複製</button></div><div class="rb-body">${r.slogan}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">4 三標籤</span><button class="rb-copy" onclick="copyTxt(this,'${tags3}')">複製</button></div><div class="rb-body">${tags3}</div></div>
-      <div class="ref-block"><div class="rb-top"><span class="rb-label">MODEL 行（可選）</span><button class="rb-copy" onclick="copyTxt(this,'${p.model}')">複製</button></div><div class="rb-body mono">${p.model}</div></div>
-    </div>
-    <div class="rule-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:13px;height:13px;vertical-align:-1px;margin-right:4px"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg>大標已去《獨家自訂》、顏色、顯瘦並重寫；賣點與標籤可用修飾身型／修身。不販賣焦慮、不帶價格、不提競品、無破折號。示意文字，正式版由 AI 依 Shopline 商品資料生成。</div>
-    <button class="btn-gen" style="margin-top:12px;background:#fff;color:var(--text-primary);border:1.5px solid var(--primary-dark)" onclick="genRef()">重新生成</button>`;
+    </div>`;
 }
 function copyTxt(btn,txt){navigator.clipboard&&navigator.clipboard.writeText(txt);if(btn)btn.textContent='已複製';setTimeout(()=>{if(btn)btn.textContent='複製';},1200);toast('已複製');}
 function copyAll(){const p=PRODUCTS.find(x=>x.id===selected);const r=p.ref;const all=`${r.tag}\n${r.title}\n${r.slogan}\n${r.tags3.join('｜')}`;copyTxt(null,all);toast('四段已複製');}
@@ -333,6 +331,7 @@ function copyAll(){const p=PRODUCTS.find(x=>x.id===selected);const r=p.ref;const
 let toastTimer=null;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1600);}
 
+$('#searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 doSearch();
 </script>
 </body>
