@@ -92,9 +92,17 @@
   .ref-block .rb-body ul{margin:0;padding-left:18px}
   .ref-block .rb-body li{margin-bottom:3px}
   .ref-block .rb-body .mono{font-family:monospace;font-size:13px}
-  .sizetb{width:100%;border-collapse:collapse;font-size:12px;margin-top:2px}
-  .sizetb th,.sizetb td{border:1px solid var(--border-light);padding:5px 8px;text-align:center}
-  .sizetb th{background:var(--bg-gray-100);font-weight:700}
+  /* P1 版面預覽格 */
+  .p1-prev-wrap{padding:16px 14px 14px;border-bottom:1px solid var(--border-light);background:var(--bg-gray-50)}
+  .p1-prev{width:216px;aspect-ratio:25/32;margin:0 auto;border-radius:8px;overflow:hidden;position:relative;box-shadow:var(--shadow-md);background:linear-gradient(165deg,#bdb6ab 0%,#ddd7cd 55%,#cfc8bd 100%)}
+  .p1-prev .phlabel{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.08em;background:rgba(0,0,0,.15);padding:2px 7px;border-radius:999px}
+  .p1-prev .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px 14px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+  .p1-prev .mid{margin-top:50%}
+  .p1-prev .ptag{font-size:10px;font-weight:700;margin-bottom:7px;opacity:.95}
+  .p1-prev .ptitle{font-size:19px;font-weight:800;line-height:1.32;letter-spacing:.02em}
+  .p1-prev .bot{margin-top:auto}
+  .p1-prev .pslogan{font-size:11.5px;font-weight:600;margin-bottom:6px}
+  .p1-prev .ptags{font-size:9.5px;font-weight:500;opacity:.95;letter-spacing:.01em}
   .rule-line{font-size:11px;color:var(--text-tertiary);margin-top:10px;padding:8px 12px;background:var(--success-bg);border-radius:var(--radius-sm);border:1px solid #CBE6D4}
   .rule-line b{color:var(--success)}
 
@@ -288,6 +296,21 @@ function renderRef(p){
   $('#genArea').innerHTML=`
     <div class="ref-card">
       <div class="rc-head"><h3>做圖參考（P1 四段）</h3><button class="copyall" onclick="copyAll()">全部複製</button></div>
+      <div class="p1-prev-wrap">
+        <div class="p1-prev">
+          <span class="phlabel">商品照</span>
+          <div class="ov">
+            <div class="mid">
+              <div class="ptag">${r.tag}</div>
+              <div class="ptitle">${r.title}</div>
+            </div>
+            <div class="bot">
+              <div class="pslogan">${r.slogan}</div>
+              <div class="ptags">${tags3}</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">1 情境標籤</span><button class="rb-copy" onclick="copyTxt(this,'${r.tag}')">複製</button></div><div class="rb-body">${r.tag}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">2 商品大標（AI 重寫）</span><button class="rb-copy" onclick="copyTxt(this,'${r.title}')">複製</button></div><div class="rb-body hook">${r.title}</div></div>
       <div class="ref-block"><div class="rb-top"><span class="rb-label">3 一句賣點</span><button class="rb-copy" onclick="copyTxt(this,'${r.slogan}')">複製</button></div><div class="rb-body">${r.slogan}</div></div>
