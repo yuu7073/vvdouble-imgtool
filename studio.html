@@ -923,29 +923,65 @@ $('#bTarget').addEventListener('input',renderBatch);
 $('#compressBtn').addEventListener('click',async()=>{
   const LIMIT=(+$('#bTarget').value||10)*1048576;const FLOOR=0.5;
   $('#compressBtn').disabled=true;$('#saveBtns').style.display='none';$('#clearAllBtn').style.display='none';
+  const queue=[];
   for(const it of batch){
-    if(it.origSize<=LIMIT){it.outBlob=it.file;it.outSize=it.origSize;it.status='skip';renderBatch();continue;}
-    it.status='doing';renderBatch();await new Promise(r=>setTimeout(r,30));
-    try{
-      const blob = it.kind==='pdf' ? await compressPdfToLimit(it,LIMIT,FLOOR) : await compressImgToLimit(it,LIMIT,FLOOR);
-      it.outBlob=blob;it.outSize=blob.size;it.status='done';
-    }catch(err){console.error(err);it.status='err';toast('PDF 處理失敗：'+(err.message||'請檢查網路'));}
-    renderBatch();
+    if(it.origSize<=LIMIT){it.outBlob=it.file;it.outSize=it.origSize;it.status='skip';continue;}
+    it.status='wait';queue.push(it);
   }
+  renderBatch();
+  const CONC=3; // 同時處理 3 個檔案（編碼在瀏覽器背景執行緒，可平行）
+  async function worker(){
+    while(queue.length){
+      const it=queue.shift();
+      it.status='doing';renderBatch();
+      try{
+        const blob = it.kind==='pdf' ? await compressPdfToLimit(it,LIMIT,FLOOR) : await compressImgToLimit(it,LIMIT,FLOOR);
+        it.outBlob=blob;it.outSize=blob.size;it.status='done';
+      }catch(err){console.error(err);it.status='err';toast((it.kind==='pdf'?'PDF 處理失敗：':'圖片處理失敗：')+(err.message||''));}
+      renderBatch();
+    }
+  }
+  await Promise.all(Array.from({length:CONC},worker));
   $('#saveBtns').style.display='flex';$('#clearAllBtn').style.display='block';$('#compressBtn').disabled=false;toast('批次壓縮完成');
 });
 
-/* 圖片：二分搜尋 JPG 品質 */
-function compressImgToLimit(it,LIMIT,FLOOR){
-  return new Promise(resolve=>{
-    const cv=document.createElement('canvas');cv.width=it.w;cv.height=it.h;
-    const ctx=cv.getContext('2d');ctx.imageSmoothingQuality='high';ctx.fillStyle='#fff';ctx.fillRect(0,0,it.w,it.h);ctx.drawImage(it.bitmap,0,0);
-    let lo=FLOOR,hi=0.98,best=null,n=0;
-    (function step(){
-      if(n++>9){best?resolve(best):cv.toBlob(b=>resolve(b),'image/jpeg',FLOOR);return;}
-      const q=(lo+hi)/2;cv.toBlob(b=>{if(b.size<=LIMIT){best=b;lo=q;}else{hi=q;}step();},'image/jpeg',q);
-    })();
-  });
+function toBlobP(cv,q){return new Promise(res=>cv.toBlob(b=>res(b),'image/jpeg',q));}
+/* 由幾個 (品質→大小) 取樣點，線性內插找出讓大小 ≤ target 的最高品質 */
+function pickQ(samples,target,FLOOR){
+  const pts=samples.slice().sort((a,b)=>a.q-b.q);
+  if(pts[0].size>target)return FLOOR;
+  let q=pts[pts.length-1].q;
+  for(let i=0;i<pts.length-1;i++){
+    const A=pts[i],B=pts[i+1];
+    if(A.size<=target&&B.size>target){q=A.q+(B.q-A.q)*((target-A.size)/(B.size-A.size));break;}
+  }
+  return Math.max(FLOOR,Math.min(0.95,q));
+}
+/* 圖片：縮圖估品質（快）→ 全圖編碼 1～3 次 */
+async function compressImgToLimit(it,LIMIT,FLOOR){
+  const cv=document.createElement('canvas');cv.width=it.w;cv.height=it.h;
+  const ctx=cv.getContext('2d');ctx.imageSmoothingQuality='high';ctx.fillStyle='#fff';ctx.fillRect(0,0,it.w,it.h);ctx.drawImage(it.bitmap,0,0);
+  // 縮圖：長邊約 1400px，JPG 大小約與像素數成正比，用來預估全圖大小
+  const scale=Math.min(1,1400/Math.max(it.w,it.h));
+  const sw=Math.max(1,Math.round(it.w*scale)),sh=Math.max(1,Math.round(it.h*scale));
+  const ratio=(it.w*it.h)/(sw*sh);
+  const sm=document.createElement('canvas');sm.width=sw;sm.height=sh;
+  const sctx=sm.getContext('2d');sctx.imageSmoothingQuality='high';sctx.fillStyle='#fff';sctx.fillRect(0,0,sw,sh);sctx.drawImage(cv,0,0,sw,sh);
+  const qs=[0.6,0.75,0.85,0.93];
+  const small=await Promise.all(qs.map(q=>toBlobP(sm,q)));
+  const samples=qs.map((q,i)=>({q,size:small[i].size*ratio*1.06})); // 縮圖估值偏小，加 6% 保險
+  let q=pickQ(samples,LIMIT*0.95,FLOOR);
+  let best=null,tries=0,lo=FLOOR,hi=0.95;
+  while(tries++<3){
+    const b=await toBlobP(cv,q);
+    if(b.size<=LIMIT){best=b;lo=q;if(b.size>=LIMIT*0.78)break;}   // 在 78%～100% 之間就收
+    else{hi=q;}
+    // 依實際結果修正，再試一次
+    const adj=(LIMIT*0.95)/b.size;
+    q=Math.max(lo,Math.min(hi,q*Math.pow(adj,0.6)));
+    if(Math.abs(hi-lo)<0.02)break;
+  }
+  return best||await toBlobP(cv,FLOOR);
 }
 /* PDF：每頁渲染成圖→以同一 JPG 品質重打包→二分搜尋讓整份 ≤ LIMIT，保留原始頁面尺寸 */
 async function renderPdfPages(it){
