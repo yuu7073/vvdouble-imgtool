@@ -969,17 +969,15 @@ async function compressImgToLimit(it,LIMIT,FLOOR){
   const sctx=sm.getContext('2d');sctx.imageSmoothingQuality='high';sctx.fillStyle='#fff';sctx.fillRect(0,0,sw,sh);sctx.drawImage(cv,0,0,sw,sh);
   const qs=[0.6,0.75,0.85,0.93];
   const small=await Promise.all(qs.map(q=>toBlobP(sm,q)));
-  const samples=qs.map((q,i)=>({q,size:small[i].size*ratio*1.06})); // 縮圖估值偏小，加 6% 保險
-  let q=pickQ(samples,LIMIT*0.95,FLOOR);
-  let best=null,tries=0,lo=FLOOR,hi=0.95;
-  while(tries++<3){
+  const samples=qs.map((q,i)=>({q,size:small[i].size*ratio*1.02})); // 縮圖估值略偏小，加 2% 保險
+  let q=pickQ(samples,LIMIT*0.97,FLOOR);
+  let best=null,lo=FLOOR,hi=0.95;
+  for(let t=0;t<5;t++){
     const b=await toBlobP(cv,q);
-    if(b.size<=LIMIT){best=b;lo=q;if(b.size>=LIMIT*0.78)break;}   // 在 78%～100% 之間就收
+    if(b.size<=LIMIT){best=b;lo=q;if(b.size>=LIMIT*0.85)break;}
     else{hi=q;}
-    // 依實際結果修正，再試一次
-    const adj=(LIMIT*0.95)/b.size;
-    q=Math.max(lo,Math.min(hi,q*Math.pow(adj,0.6)));
-    if(Math.abs(hi-lo)<0.02)break;
+    if(hi-lo<0.015)break;
+    q=(lo+hi)/2;
   }
   return best||await toBlobP(cv,FLOOR);
 }
